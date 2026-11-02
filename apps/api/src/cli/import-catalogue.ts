@@ -77,7 +77,7 @@ export async function importCatalogue(prisma: PrismaService, raw: unknown, opts:
     }
     await tx.auditLog.create({ data: { id: newId(), actorRole: 'CLI', action: 'catalogue.imported', entityType: 'catalogue', after: { ...r } } });
     return r;
-  });
+  }, { timeout: 120_000, maxWait: 30_000 });
 }
 
 async function main(): Promise<void> {
