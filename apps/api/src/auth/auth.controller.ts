@@ -72,7 +72,10 @@ export class AuthController {
     if (this.env.GUEST_CHECKOUT !== 'true') throw new AppError('NOT_FOUND', 'Guest checkout is not enabled');
     await this.limits.hit(LIMITS.guestSessionPerIp, req.ip);
     const userId = await this.prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({ data: { id: newId(), kind: 'CUSTOMER', lastLoginAt: new Date() } });
+      // The user table requires a phone or an email (user_contact_present), so a guest gets a placeholder address
+      // on a reserved .invalid domain: it can never receive mail or be logged into.
+      const id = newId();
+      const user = await tx.user.create({ data: { id, email: `guest-${id}@guest.invalid`, kind: 'CUSTOMER', lastLoginAt: new Date() } });
       await this.sessions.create(user.id, 'CUSTOMER', req, res, {}, tx);
       return user.id;
     });
