@@ -10,11 +10,10 @@ import { CSRF_COOKIE, issueCsrfToken } from '../access/csrf.js';
 import { CurrentPrincipal, Public, StaffRead } from '../access/decorators.js';
 import type { Principal, StaffPrincipal } from '../access/principal.js';
 import { OtpService } from './otp.service.js';
+import { GuestAuthService } from './guest-auth.service.js';
 import { SessionService } from './session.service.js';
 import { StaffAuthService } from './staff-auth.service.js';
 import { CartService } from '../cart/cart.service.js';
-import { newId } from '../common/crypto.js';
-import { LIMITS, RateLimitService } from '../rate-limit/rate-limit.service.js';
 
 const OtpRequest = z.object({ phone: z.string().min(10).max(20) }).strict();
 const OtpVerify = z.object({ challengeId: z.string().uuid(), code: z.string().min(4).max(12) }).strict();
@@ -26,12 +25,12 @@ const ChangePassword = z.object({ currentPassword: z.string().min(1).max(256), n
 export class AuthController {
   constructor(
     @Inject(OtpService) private readonly otp: OtpService,
+    @Inject(GuestAuthService) private readonly guests: GuestAuthService,
     @Inject(StaffAuthService) private readonly staff: StaffAuthService,
     @Inject(SessionService) private readonly sessions: SessionService,
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(ENV) private readonly env: Env,
     @Inject(CartService) private readonly carts: CartService,
-    @Inject(RateLimitService) private readonly limits: RateLimitService,
   ) {}
 
   @Get('csrf')
@@ -60,27 +59,14 @@ export class AuthController {
     return { user: { id: r.userId }, isNew: r.isNew };
   }
 
-  /**
-   * Guest checkout: a fresh anonymous customer (no phone) with its own session, so orders can be placed
-   * without SMS OTP. It never attaches to an existing account, so it cannot expose anyone's orders.
-   * The contact name/phone/address live on each order. Disabled unless GUEST_CHECKOUT=true.
-   */
+  /** Starts an anonymous customer session so a shopper can order without an SMS code. Only when GUEST_CHECKOUT=true. */
   @Post('guest')
   @Public()
   @HttpCode(200)
   async guest(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    if (this.env.GUEST_CHECKOUT !== 'true') throw new AppError('NOT_FOUND', 'Guest checkout is not enabled');
-    await this.limits.hit(LIMITS.guestSessionPerIp, req.ip);
-    const userId = await this.prisma.$transaction(async (tx) => {
-      // The user table requires a phone or an email (user_contact_present), so a guest gets a placeholder address
-      // on a reserved .invalid domain: it can never receive mail or be logged into.
-      const id = newId();
-      const user = await tx.user.create({ data: { id, email: `guest-${id}@guest.invalid`, kind: 'CUSTOMER', lastLoginAt: new Date() } });
-      await this.sessions.create(user.id, 'CUSTOMER', req, res, {}, tx);
-      return user.id;
-    });
-    await this.carts.mergeOnLogin(userId, req, res);
-    return { user: { id: userId }, guest: true };
+    const r = await this.guests.start(req, res);
+    await this.carts.mergeOnLogin(r.userId, req, res);
+    return { user: { id: r.userId } };
   }
 
   @Post('staff/login')

@@ -37,10 +37,9 @@ services:
       - { key: MEDIA_PUBLIC_URL, sync: false }
       # SMS: the API refuses to start on staging without an https SMS URL. This reserved ".invalid" host can never
       # resolve, so no SMS is ever sent (and customer OTP login is therefore unavailable in this preview).
+      - { key: GUEST_CHECKOUT, value: "true" }
       - { key: SMS_PROVIDER, value: http }
       - { key: SMS_HTTP_URL, value: "https://sms-disabled.invalid/send" }
-      # no SMS provider yet: allow order placement without OTP (anonymous guest sessions, COD, staff confirm by phone)
-      - { key: GUEST_CHECKOUT, value: "true" }
       # one-time bootstrap (see docs/FREE_STAGING.md): remove STAFF_PASSWORD after the first successful boot
       - { key: STAGING_IMPORT_CATALOGUE, value: "true" }
       - { key: STAGING_ADMIN_EMAIL, sync: false }

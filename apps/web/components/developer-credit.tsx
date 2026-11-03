@@ -3,8 +3,9 @@
  * (NEXT_PUBLIC_DEMO_BRANDING=1); the logo file is used exactly as supplied.
  */
 export const DEMO_BRANDING = process.env.NEXT_PUBLIC_DEMO_BRANDING === '1';
-/** The credit alone can be switched on for a live site (NEXT_PUBLIC_DEVELOPER_CREDIT=1) without the demo build's mock-API behaviour. */
-const SHOW_CREDIT = DEMO_BRANDING || process.env.NEXT_PUBLIC_DEVELOPER_CREDIT === '1';
+
+// The credit can be shown on the live/staging shop without switching on the other demo behaviours.
+const SHOW_CREDIT = DEMO_BRANDING || process.env.NEXT_PUBLIC_SHOW_DEVELOPER_CREDIT === '1';
 
 export function DeveloperCredit({ size = 'footer' }: { size?: 'footer' | 'about' }) {
   if (!SHOW_CREDIT) return null;

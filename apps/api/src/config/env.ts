@@ -15,8 +15,6 @@ const EnvSchema = z
     DATABASE_URL: z.string().min(1),
     /** PEM text of the CA that signed the database server certificate (e.g. Supabase). Enables verified TLS; see docs/FREE_STAGING.md. */
     DATABASE_CA_CERT: z.string().default(''),
-    /** Max connections per API process. Serverless (Vercel): 1 per function instance, with Supabase's transaction pooler. */
-    DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(20).default(10),
     SESSION_SECRET: z.string().min(32),
     OTP_HMAC_KEY: z.string().min(32),
     DATA_ENCRYPTION_KEY: base64Key32,
@@ -38,11 +36,9 @@ const EnvSchema = z
     SMS_HTTP_PHONE_FORMAT: z.enum(['e164', '880', '0']).default('880'),
     SMS_HTTP_SUCCESS_PATTERN: z.string().default('.'),
     ENABLE_DEV_OUTBOX: z.enum(['true', 'false']).default('false'),
-    /** Anonymous (phone-less) customer sessions so orders can be placed without SMS OTP. Off by default. */
+    /** Lets a shopper order with name, phone and address and no SMS code (staff confirm by phone). Off by default. */
     GUEST_CHECKOUT: z.enum(['true', 'false']).default('false'),
     SMS_DAILY_CAP: z.coerce.number().int().min(0).default(500),
-    /** Enables GET /v1/health/runtime for deployment checks (Bearer token). Empty = the route does not exist. */
-    HEALTH_DIAG_TOKEN: z.string().default(''),
     LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
   })
   .superRefine((env, ctx) => {

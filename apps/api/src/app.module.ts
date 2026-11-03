@@ -9,6 +9,7 @@ import { AccessGuard } from './access/access.guard.js';
 import { CsrfGuard } from './access/csrf.js';
 import { SessionService } from './auth/session.service.js';
 import { OtpService } from './auth/otp.service.js';
+import { GuestAuthService } from './auth/guest-auth.service.js';
 import { StaffAuthService } from './auth/staff-auth.service.js';
 import { DevSmsOutboxController, HttpSmsSender, LogSmsSender, SmsSender } from './auth/sms.js';
 import { AuthController, MeController } from './auth/auth.controller.js';
@@ -49,6 +50,7 @@ export class AppModule {
       AuditService,
       SessionService,
       OtpService,
+      GuestAuthService,
       StaffAuthService,
       RateLimitService,
       SettingsService,
