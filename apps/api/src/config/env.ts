@@ -15,6 +15,8 @@ const EnvSchema = z
     DATABASE_URL: z.string().min(1),
     /** PEM text of the CA that signed the database server certificate (e.g. Supabase). Enables verified TLS; see docs/FREE_STAGING.md. */
     DATABASE_CA_CERT: z.string().default(''),
+    /** Max connections per API process. Serverless (Vercel): 1 per function instance, with Supabase's transaction pooler. */
+    DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(20).default(10),
     SESSION_SECRET: z.string().min(32),
     OTP_HMAC_KEY: z.string().min(32),
     DATA_ENCRYPTION_KEY: base64Key32,
@@ -38,6 +40,8 @@ const EnvSchema = z
     ENABLE_DEV_OUTBOX: z.enum(['true', 'false']).default('false'),
     /** Lets a shopper order with name, phone and address and no SMS code (staff confirm by phone). Off by default. */
     GUEST_CHECKOUT: z.enum(['true', 'false']).default('false'),
+    /** Enables GET /v1/health/runtime for deployment checks (Bearer token). Empty = the route does not exist. */
+    HEALTH_DIAG_TOKEN: z.string().default(''),
     SMS_DAILY_CAP: z.coerce.number().int().min(0).default(500),
     LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
   })
