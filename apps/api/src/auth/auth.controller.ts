@@ -13,6 +13,8 @@ import { OtpService } from './otp.service.js';
 import { SessionService } from './session.service.js';
 import { StaffAuthService } from './staff-auth.service.js';
 import { CartService } from '../cart/cart.service.js';
+import { newId } from '../common/crypto.js';
+import { LIMITS, RateLimitService } from '../rate-limit/rate-limit.service.js';
 
 const OtpRequest = z.object({ phone: z.string().min(10).max(20) }).strict();
 const OtpVerify = z.object({ challengeId: z.string().uuid(), code: z.string().min(4).max(12) }).strict();
@@ -29,6 +31,7 @@ export class AuthController {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(ENV) private readonly env: Env,
     @Inject(CartService) private readonly carts: CartService,
+    @Inject(RateLimitService) private readonly limits: RateLimitService,
   ) {}
 
   @Get('csrf')
@@ -55,6 +58,26 @@ export class AuthController {
     const r = await this.otp.verify(b.challengeId, b.code, req, res);
     await this.carts.mergeOnLogin(r.userId, req, res);
     return { user: { id: r.userId }, isNew: r.isNew };
+  }
+
+  /**
+   * Guest checkout: a fresh anonymous customer (no phone) with its own session, so orders can be placed
+   * without SMS OTP. It never attaches to an existing account, so it cannot expose anyone's orders.
+   * The contact name/phone/address live on each order. Disabled unless GUEST_CHECKOUT=true.
+   */
+  @Post('guest')
+  @Public()
+  @HttpCode(200)
+  async guest(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    if (this.env.GUEST_CHECKOUT !== 'true') throw new AppError('NOT_FOUND', 'Guest checkout is not enabled');
+    await this.limits.hit(LIMITS.guestSessionPerIp, req.ip);
+    const userId = await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({ data: { id: newId(), kind: 'CUSTOMER', lastLoginAt: new Date() } });
+      await this.sessions.create(user.id, 'CUSTOMER', req, res, {}, tx);
+      return user.id;
+    });
+    await this.carts.mergeOnLogin(userId, req, res);
+    return { user: { id: userId }, guest: true };
   }
 
   @Post('staff/login')

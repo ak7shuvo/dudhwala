@@ -16,6 +16,7 @@ export const LIMITS = {
   otpVerifyPerIp: { name: 'otp-verify:ip', max: 30, windowMs: 3_600_000 },
   orderPerCustomer: { name: 'order:user', max: 30, windowMs: 10 * 60_000 },
   cartPerIp: { name: 'cart:ip', max: 300, windowMs: 10 * 60_000 },
+  guestSessionPerIp: { name: 'guest:ip', max: 20, windowMs: 3_600_000 },
 } as const satisfies Record<string, Limit>;
 
 /**

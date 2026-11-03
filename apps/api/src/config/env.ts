@@ -38,6 +38,8 @@ const EnvSchema = z
     SMS_HTTP_PHONE_FORMAT: z.enum(['e164', '880', '0']).default('880'),
     SMS_HTTP_SUCCESS_PATTERN: z.string().default('.'),
     ENABLE_DEV_OUTBOX: z.enum(['true', 'false']).default('false'),
+    /** Anonymous (phone-less) customer sessions so orders can be placed without SMS OTP. Off by default. */
+    GUEST_CHECKOUT: z.enum(['true', 'false']).default('false'),
     SMS_DAILY_CAP: z.coerce.number().int().min(0).default(500),
     /** Enables GET /v1/health/runtime for deployment checks (Bearer token). Empty = the route does not exist. */
     HEALTH_DIAG_TOKEN: z.string().default(''),
